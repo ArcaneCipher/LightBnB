@@ -130,19 +130,60 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = (options, limit = 10) => {
-  return pool
-    .query(
-      `SELECT * FROM properties LIMIT $1;`, // SQL query to fetch all properties with a limit
-      [limit] // Pass the limit as a parameter to the query
-    )
-    .then((result) => {
-      // console.log(result.rows); // For testing. Commented out to ensure clean console.
-      return result.rows; // Return the rows (property data)
-    })
-    .catch((err) => {
-      console.error("Error executing query:", err.message); // Log any errors
-      throw err; // Re-throw the error so it can be handled by the caller
-    });
+  // Setup an array to hold any parameters that may be available for the query.
+  const queryParams = [];
+
+  // Start the query with all information that comes before the WHERE clause.
+  let queryString = `
+  SELECT properties.*, avg(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN property_reviews ON properties.id = property_id
+  `;
+
+  // Initialize WHERE clause logic
+  let whereClauses = [];
+
+  // Check if a city is provided.
+  if (options.city) {
+    queryParams.push(`%${options.city}%`); // Add the city to the params array
+    whereClauses.push(`city LIKE $${queryParams.length}`);
+  }
+
+  // Check if an owner_id is provided.
+  if (options.owner_id) {
+    queryParams.push(options.owner_id);
+    whereClauses.push(`owner_id = $${queryParams.length}`);
+  }
+
+  // Check if a price range is provided.
+  if (options.minimum_price_per_night) {
+    queryParams.push(Number(options.minimum_price_per_night) * 100); // Convert dollars to cents
+    whereClauses.push(`cost_per_night >= $${queryParams.length}`);
+  }
+  if (options.maximum_price_per_night) {
+    queryParams.push(Number(options.maximum_price_per_night) * 100); // Convert dollars to cents
+    whereClauses.push(`cost_per_night <= $${queryParams.length}`);
+  }
+
+  // Add the WHERE clause to the query string if there are conditions.
+  if (whereClauses.length > 0) {
+    queryString += `WHERE ${whereClauses.join(' AND ')} `;
+  }
+
+  // Add grouping, ordering, and limiting logic.
+  queryString += `
+  GROUP BY properties.id
+  HAVING avg(property_reviews.rating) >= $${queryParams.push(
+    options.minimum_rating || 0
+  )} -- Default to 0 if no minimum_rating is provided
+  ORDER BY cost_per_night
+  LIMIT $${queryParams.push(limit)};
+  `;
+
+  console.log(queryString, queryParams); // Log the query string and parameters for debugging.
+
+  // Execute the query and return the results.
+  return pool.query(queryString, queryParams).then((res) => res.rows);
 };
 
 
