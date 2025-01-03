@@ -18,14 +18,21 @@ const pool = new Pool({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
-  let resolvedUser = null;
-  for (const userId in users) {
-    const user = users[userId];
-    if (user && user.email.toLowerCase() === email.toLowerCase()) {
-      resolvedUser = user;
-    }
-  }
-  return Promise.resolve(resolvedUser);
+  return pool
+    .query(
+      `SELECT * FROM users WHERE email = $1;`, // SQL query to find the user by email
+      [email] // Use parameterized queries to prevent SQL injection
+    )
+    .then((result) => {
+      if (result.rows.length === 0) {
+        return null; // Return null if no user is found
+      }
+      return result.rows[0]; // Return the first (and only) user found
+    })
+    .catch((err) => {
+      console.log("Error querying database: ", err.message); // Log the error for debugging
+      throw err; // Re-throw the error so it can be handled by the caller
+    });
 };
 
 /**
@@ -34,7 +41,19 @@ const getUserWithEmail = function (email) {
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function (id) {
-  return Promise.resolve(users[id]);
+  return pool
+    .query(`SELECT * FROM users WHERE id = $1;`, // SQL query to find the user by ID
+      [id]) // Use parameterized queries to prevent SQL injection
+    .then((result) => {
+      if (result.rows.length === 0) {
+        return null; // Return null if no user is found
+      }
+      return result.rows[0]; // Return the first (and only) user found
+    })
+    .catch((err) => {
+      console.error("Error querying database:", err.message); // Log the error for debugging
+      throw err; // Re-throw the error so it can be handled by the caller
+    });
 };
 
 /**
@@ -43,10 +62,22 @@ const getUserWithId = function (id) {
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  const userId = Object.keys(users).length + 1;
-  user.id = userId;
-  users[userId] = user;
-  return Promise.resolve(user);
+  const { name, email, password } = user;
+
+  return pool
+    .query(
+      `INSERT INTO users (name, email, password)
+       VALUES ($1, $2, $3)
+       RETURNING *;`, // Return the newly inserted user
+      [name, email, password] // Use parameterized query to safely insert values
+    )
+    .then((result) => {
+      return result.rows[0]; // Return the inserted user object
+    })
+    .catch((err) => {
+      console.error("Error inserting user into database:", err.message); // Log the error
+      throw err; // Re-throw the error to propagate it
+    });
 };
 
 /// Reservations
@@ -75,7 +106,7 @@ const getAllProperties = (options, limit = 10) => {
       [limit] // Pass the limit as a parameter to the query
     )
     .then((result) => {
-      console.log(result.rows);
+      // console.log(result.rows); // For testing. Commented out to ensure clean console.
       return result.rows; // Return the rows (property data)
     })
     .catch((err) => {
