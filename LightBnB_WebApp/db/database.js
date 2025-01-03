@@ -170,12 +170,20 @@ const getAllProperties = (options, limit = 10) => {
     queryString += `WHERE ${whereClauses.join(' AND ')} `;
   }
 
-  // Add grouping, ordering, and limiting logic.
+  // Add grouping logic.
   queryString += `
   GROUP BY properties.id
-  HAVING avg(property_reviews.rating) >= $${queryParams.push(
-    options.minimum_rating || 0
-  )} -- Default to 0 if no minimum_rating is provided
+  `;
+
+  // The HAVING clause should only be included if options.minimum_rating is explicitly provided.
+  if (options.minimum_rating) {
+    queryString += `HAVING avg(property_reviews.rating) >= $${queryParams.push(
+      options.minimum_rating
+    )} `;
+  }
+
+  // Add ordering and limiting logic.
+  queryString += `
   ORDER BY cost_per_night
   LIMIT $${queryParams.push(limit)};
   `;
