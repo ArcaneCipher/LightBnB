@@ -5,6 +5,8 @@ const cookieSession = require("cookie-session");
 const app = express();
 const port = process.env.PORT || 3000;
 
+const { query } = require('./db/index.js'); // Import the centralized query function
+
 // middleware
 app.use(express.static(path.join(__dirname, "./public")));
 app.use(express.urlencoded({ extended: false }));

@@ -1,14 +1,7 @@
 const properties = require("./json/properties.json");
 const users = require("./json/users.json");
 
-const { Pool } = require("pg");
-
-const pool = new Pool({
-  user: "development",
-  password: "development",
-  host: "localhost",
-  database: "lightbnb",
-});
+const { query } = require('./index.js'); // Import the centralized query function
 
 /// Users
 
@@ -17,12 +10,11 @@ const pool = new Pool({
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithEmail = function (email) {
-  return pool
-    .query(
-      `SELECT * FROM users WHERE email = $1;`, // SQL query to find the user by email
-      [email] // Use parameterized queries to prevent SQL injection
-    )
+const getUserWithEmail = (email) => {
+  return query(
+    `SELECT * FROM users WHERE email = $1;`, // SQL query to find the user by email
+    [email] // Use parameterized queries to prevent SQL injection
+  )
     .then((result) => {
       if (result.rows.length === 0) {
         return null; // Return null if no user is found
@@ -40,10 +32,11 @@ const getUserWithEmail = function (email) {
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithId = function (id) {
-  return pool
-    .query(`SELECT * FROM users WHERE id = $1;`, // SQL query to find the user by ID
-      [id]) // Use parameterized queries to prevent SQL injection
+const getUserWithId = (id) => {
+  return query(
+    `SELECT * FROM users WHERE id = $1;`, // SQL query to find the user by ID
+    [id] // Use parameterized queries to prevent SQL injection
+  )
     .then((result) => {
       if (result.rows.length === 0) {
         return null; // Return null if no user is found
@@ -61,16 +54,15 @@ const getUserWithId = function (id) {
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser = function (user) {
+const addUser = (user) => {
   const { name, email, password } = user;
 
-  return pool
-    .query(
-      `INSERT INTO users (name, email, password)
+  return query(
+    `INSERT INTO users (name, email, password)
        VALUES ($1, $2, $3)
        RETURNING *;`, // Return the newly inserted user
-      [name, email, password] // Use parameterized query to safely insert values
-    )
+    [name, email, password] // Use parameterized query to safely insert values
+  )
     .then((result) => {
       return result.rows[0]; // Return the inserted user object
     })
@@ -87,31 +79,30 @@ const addUser = function (user) {
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function (guest_id, limit = 10) {
-  return pool
-    .query(
-      `
-      SELECT reservations.id AS reservation_id, 
-             reservations.start_date, 
-             reservations.end_date, 
-             properties.title, 
-             properties.cost_per_night,
-             properties.cover_photo_url,
-             properties.thumbnail_photo_url,
-             properties.parking_spaces, 
-             properties.number_of_bathrooms,
-             properties.number_of_bedrooms,  
-             AVG(property_reviews.rating) AS average_rating
-      FROM reservations
-      JOIN properties ON reservations.property_id = properties.id
-      LEFT JOIN property_reviews ON properties.id = property_reviews.property_id
-      WHERE reservations.guest_id = $1 AND reservations.end_date < now()::date
-      GROUP BY reservations.id, properties.id
-      ORDER BY reservations.start_date
-      LIMIT $2;
-      `,
-      [guest_id, limit] // Parameterized query values
-    )
+const getAllReservations = (guest_id, limit = 10) => {
+  return query(
+    `
+    SELECT reservations.id AS reservation_id, 
+           reservations.start_date, 
+           reservations.end_date, 
+           properties.title, 
+           properties.cost_per_night,
+           properties.cover_photo_url,
+           properties.thumbnail_photo_url,
+           properties.parking_spaces, 
+           properties.number_of_bathrooms,
+           properties.number_of_bedrooms,  
+           AVG(property_reviews.rating) AS average_rating
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    LEFT JOIN property_reviews ON properties.id = property_reviews.property_id
+    WHERE reservations.guest_id = $1 AND reservations.end_date < now()::date
+    GROUP BY reservations.id, properties.id
+    ORDER BY reservations.start_date
+    LIMIT $2;
+    `,
+    [guest_id, limit] // Parameterized query values
+  )
     .then((result) => {
       return result.rows; // Return the rows (reservations data)
     })
@@ -167,7 +158,7 @@ const getAllProperties = (options, limit = 10) => {
 
   // Add the WHERE clause to the query string if there are conditions.
   if (whereClauses.length > 0) {
-    queryString += `WHERE ${whereClauses.join(' AND ')} `;
+    queryString += `WHERE ${whereClauses.join(" AND ")} `;
   }
 
   // Add grouping logic.
@@ -191,16 +182,15 @@ const getAllProperties = (options, limit = 10) => {
   console.log(queryString, queryParams); // Log the query string and parameters for debugging.
 
   // Execute the query and return the results.
-  return pool.query(queryString, queryParams).then((res) => res.rows);
+  return query(queryString, queryParams).then((res) => res.rows);
 };
-
 
 /**
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
-const addProperty = function (property) {
+const addProperty = (property) => {
   const queryParams = [
     property.owner_id,
     property.title,
@@ -241,8 +231,7 @@ const addProperty = function (property) {
     RETURNING *;
   `;
 
-  return pool
-    .query(queryString, queryParams)
+  return query(queryString, queryParams)
     .then((result) => result.rows[0]) // Return the inserted property
     .catch((err) => {
       console.error("Error inserting property into database:", err.message);

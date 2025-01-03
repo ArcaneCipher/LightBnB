@@ -3,6 +3,8 @@ const database = require("../db/database");
 
 const router = express.Router();
 
+const { query } = require('../db/index.js'); // Import the centralized query function
+
 router.get("/properties", (req, res) => {
   database
     .getAllProperties(req.query, 20)
