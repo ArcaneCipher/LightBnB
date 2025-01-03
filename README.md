@@ -198,7 +198,7 @@ The LightBnB project uses the following dependencies:
 - `bcrypt`: "^5.1.1" - Library for hashing and verifying passwords securely.
 - `bcryptjs`: "^2.4.3" - JavaScript implementation of bcrypt for password hashing.
 - `cookie-session`: "^1.3.3" - Middleware for managing session data using cookies.
-- `express: "^4.17.1" - Web framework for handling HTTP requests and routing.
+- `express`: "^4.17.1" - Web framework for handling HTTP requests and routing.
 - `nodemon`: "^1.19.1" - Development tool for automatically restarting the server on file changes.
 - `pg`: "^8.13.1" - PostgreSQL client for querying the database.
 
