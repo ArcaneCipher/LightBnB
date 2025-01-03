@@ -86,6 +86,8 @@ LightBnB is an innovative app that bridges the gap between vacationers and homeo
 │   └── server.js      // the entry point to the application
 ├── migrations         // the database schema
 │   └── 01_schema.sql
+├── screenshots
+│   └── app-view.png
 ├── seeds              // seed data for database
 │   ├── 01_seeds.sql
 │   └── 02_seeds.sql
@@ -124,7 +126,7 @@ cd LightBnB_WebApp
 npm install
 ```
 
-*Make sure to install all dependencies by running npm install in each respective directory (`LightBnB` and `LightBnB_WebApp`)`.
+*Make sure to install all dependencies by running npm install in each respective directory (`LightBnB` and `LightBnB_WebApp`).
 
 6. Set up the database:
 
@@ -251,4 +253,4 @@ The backend of LightBnB is built on Node.js and Express.js, providing a robust a
 
 ## Screenshots
 
-![App Screenshot](./screenshots/app-screenshot.png)
+![App Screenshot](./screenshots/app-view.png)
